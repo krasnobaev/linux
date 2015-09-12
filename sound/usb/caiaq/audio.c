@@ -66,6 +66,7 @@ activate_substream(struct snd_usb_caiaqdev *cdev,
 {
 	spin_lock(&cdev->spinlock);
 
+	snd_printk(KERN_DEBUG "activate_substream entered.\n");
 	if (sub->stream == SNDRV_PCM_STREAM_PLAYBACK)
 		cdev->sub_playback[sub->number] = sub;
 	else
@@ -79,6 +80,8 @@ deactivate_substream(struct snd_usb_caiaqdev *cdev,
 		     struct snd_pcm_substream *sub)
 {
 	unsigned long flags;
+
+	snd_printk(KERN_DEBUG "deactivate_substream entered.\n");
 	spin_lock_irqsave(&cdev->spinlock, flags);
 
 	if (sub->stream == SNDRV_PCM_STREAM_PLAYBACK)
@@ -93,6 +96,8 @@ static int
 all_substreams_zero(struct snd_pcm_substream **subs)
 {
 	int i;
+
+	snd_printk(KERN_DEBUG "all_substreams_zero entered.\n");
 	for (i = 0; i < MAX_STREAMS; i++)
 		if (subs[i] != NULL)
 			return 0;
@@ -104,6 +109,7 @@ static int stream_start(struct snd_usb_caiaqdev *cdev)
 	int i, ret;
 	struct device *dev = caiaqdev_to_dev(cdev);
 
+	snd_printk(KERN_DEBUG "stream_start entered.\n");
 	dev_dbg(dev, "%s(%p)\n", __func__, cdev);
 
 	if (cdev->streaming)
@@ -135,6 +141,7 @@ static void stream_stop(struct snd_usb_caiaqdev *cdev)
 	int i;
 	struct device *dev = caiaqdev_to_dev(cdev);
 
+	snd_printk(KERN_DEBUG "stream_stop entered.\n");
 	dev_dbg(dev, "%s(%p)\n", __func__, cdev);
 	if (!cdev->streaming)
 		return;
@@ -156,6 +163,7 @@ static int snd_usb_caiaq_substream_open(struct snd_pcm_substream *substream)
 	struct snd_usb_caiaqdev *cdev = snd_pcm_substream_chip(substream);
 	struct device *dev = caiaqdev_to_dev(cdev);
 
+	snd_printk(KERN_DEBUG "snd_usb_caiaq_substream_open entered.\n");
 	dev_dbg(dev, "%s(%p)\n", __func__, substream);
 	substream->runtime->hw = cdev->pcm_info;
 	snd_pcm_limit_hw_rates(substream->runtime);
@@ -168,6 +176,7 @@ static int snd_usb_caiaq_substream_close(struct snd_pcm_substream *substream)
 	struct snd_usb_caiaqdev *cdev = snd_pcm_substream_chip(substream);
 	struct device *dev = caiaqdev_to_dev(cdev);
 
+	snd_printk(KERN_DEBUG "snd_usb_caiaq_substream_close entered.\n");
 	dev_dbg(dev, "%s(%p)\n", __func__, substream);
 	if (all_substreams_zero(cdev->sub_playback) &&
 	    all_substreams_zero(cdev->sub_capture)) {
@@ -183,6 +192,7 @@ static int snd_usb_caiaq_substream_close(struct snd_pcm_substream *substream)
 static int snd_usb_caiaq_pcm_hw_params(struct snd_pcm_substream *sub,
 				       struct snd_pcm_hw_params *hw_params)
 {
+	snd_printk(KERN_DEBUG "snd_usb_caiaq_pcm_hw_params entered.\n");
 	return snd_pcm_lib_alloc_vmalloc_buffer(sub,
 						params_buffer_bytes(hw_params));
 }
@@ -190,6 +200,8 @@ static int snd_usb_caiaq_pcm_hw_params(struct snd_pcm_substream *sub,
 static int snd_usb_caiaq_pcm_hw_free(struct snd_pcm_substream *sub)
 {
 	struct snd_usb_caiaqdev *cdev = snd_pcm_substream_chip(sub);
+
+	snd_printk(KERN_DEBUG "snd_usb_caiaq_pcm_hw_free entered.\n");
 	deactivate_substream(cdev, sub);
 	return snd_pcm_lib_free_vmalloc_buffer(sub);
 }
@@ -210,6 +222,7 @@ static int snd_usb_caiaq_pcm_prepare(struct snd_pcm_substream *substream)
 	struct snd_pcm_runtime *runtime = substream->runtime;
 	struct device *dev = caiaqdev_to_dev(cdev);
 
+	snd_printk(KERN_DEBUG "snd_usb_caiaq_pcm_prepare entered.\n");
 	dev_dbg(dev, "%s(%p)\n", __func__, substream);
 
 	if (substream->stream == SNDRV_PCM_STREAM_PLAYBACK) {
@@ -293,6 +306,7 @@ static int snd_usb_caiaq_pcm_trigger(struct snd_pcm_substream *sub, int cmd)
 	struct snd_usb_caiaqdev *cdev = snd_pcm_substream_chip(sub);
 	struct device *dev = caiaqdev_to_dev(cdev);
 
+	snd_printk(KERN_DEBUG "snd_usb_caiaq_pcm_trigger entered.\n");
 	dev_dbg(dev, "%s(%p) cmd %d\n", __func__, sub, cmd);
 
 	switch (cmd) {
@@ -318,6 +332,7 @@ snd_usb_caiaq_pcm_pointer(struct snd_pcm_substream *sub)
 	struct snd_usb_caiaqdev *cdev = snd_pcm_substream_chip(sub);
 	snd_pcm_uframes_t ptr;
 
+	snd_printk(KERN_DEBUG "snd_usb_caiaq_pcm_pointer entered.\n");
 	spin_lock(&cdev->spinlock);
 
 	if (cdev->input_panic || cdev->output_panic) {
@@ -357,6 +372,7 @@ static void check_for_elapsed_periods(struct snd_usb_caiaqdev *cdev,
 	int stream, pb, *cnt;
 	struct snd_pcm_substream *sub;
 
+	snd_printk(KERN_DEBUG "check_for_elapsed_periods entered.\n");
 	for (stream = 0; stream < cdev->n_streams; stream++) {
 		sub = subs[stream];
 		if (!sub)
@@ -382,6 +398,7 @@ static void read_in_urb_mode0(struct snd_usb_caiaqdev *cdev,
 	struct snd_pcm_substream *sub;
 	int stream, i;
 
+	snd_printk(KERN_DEBUG "read_in_urb_mode0 entered.\n");
 	if (all_substreams_zero(cdev->sub_capture))
 		return;
 
@@ -411,6 +428,7 @@ static void read_in_urb_mode2(struct snd_usb_caiaqdev *cdev,
 	struct snd_pcm_substream *sub;
 	int stream, i;
 
+	snd_printk(KERN_DEBUG "read_in_urb_mode2 entered.\n");
 	for (i = 0; i < iso->actual_length;) {
 		if (i % (cdev->n_streams * BYTES_PER_SAMPLE_USB) == 0) {
 			for (stream = 0;
@@ -457,6 +475,7 @@ static void read_in_urb_mode3(struct snd_usb_caiaqdev *cdev,
 	struct device *dev = caiaqdev_to_dev(cdev);
 	int stream, i;
 
+	snd_printk(KERN_DEBUG "read_in_urb_mode3 entered.\n");
 	/* paranoia check */
 	if (iso->actual_length % (BYTES_PER_SAMPLE_USB * CHANNELS_PER_STREAM))
 		return;
@@ -511,6 +530,7 @@ static void read_in_urb(struct snd_usb_caiaqdev *cdev,
 {
 	struct device *dev = caiaqdev_to_dev(cdev);
 
+	snd_printk(KERN_DEBUG "read_in_urb entered.\n");
 	if (!cdev->streaming)
 		return;
 
@@ -545,6 +565,7 @@ static void fill_out_urb_mode_0(struct snd_usb_caiaqdev *cdev,
 	struct snd_pcm_substream *sub;
 	int stream, i;
 
+	snd_printk(KERN_DEBUG "fill_out_urb_mode_0 entered.\n");
 	for (i = 0; i < iso->length;) {
 		for (stream = 0; stream < cdev->n_streams; stream++, i++) {
 			sub = cdev->sub_playback[stream];
@@ -578,6 +599,7 @@ static void fill_out_urb_mode_3(struct snd_usb_caiaqdev *cdev,
 	unsigned char *usb_buf = urb->transfer_buffer + iso->offset;
 	int stream, i;
 
+	snd_printk(KERN_DEBUG "fill_out_urb_mode_3 entered.\n");
 	for (i = 0; i < iso->length;) {
 		for (stream = 0; stream < cdev->n_streams; stream++) {
 			struct snd_pcm_substream *sub = cdev->sub_playback[stream];
@@ -618,6 +640,7 @@ static inline void fill_out_urb(struct snd_usb_caiaqdev *cdev,
 				struct urb *urb,
 				const struct usb_iso_packet_descriptor *iso)
 {
+	snd_printk(KERN_DEBUG "fill_out_urb entered.\n");
 	switch (cdev->spec.data_alignment) {
 	case 0:
 	case 2:
@@ -638,6 +661,7 @@ static void read_completed(struct urb *urb)
 	int i, frame, len, send_it = 0, outframe = 0;
 	size_t offset = 0;
 
+	snd_printk(KERN_DEBUG "read_completed entered.\n");
 	if (urb->status || !info)
 		return;
 
@@ -709,6 +733,7 @@ static void write_completed(struct urb *urb)
 	struct snd_usb_caiaq_cb_info *info = urb->context;
 	struct snd_usb_caiaqdev *cdev = info->cdev;
 
+	snd_printk(KERN_DEBUG "write_completed entered.\n");
 	if (!cdev->output_running) {
 		cdev->output_running = 1;
 		wake_up(&cdev->prepare_wait_queue);
@@ -725,6 +750,7 @@ static struct urb **alloc_urbs(struct snd_usb_caiaqdev *cdev, int dir, int *ret)
 	struct device *dev = caiaqdev_to_dev(cdev);
 	unsigned int pipe;
 
+	snd_printk(KERN_DEBUG "alloc_urbs entered.\n");
 	pipe = (dir == SNDRV_PCM_STREAM_PLAYBACK) ?
 		usb_sndisocpipe(usb_dev, ENDPOINT_PLAYBACK) :
 		usb_rcvisocpipe(usb_dev, ENDPOINT_CAPTURE);
@@ -779,6 +805,7 @@ static void free_urbs(struct urb **urbs)
 {
 	int i;
 
+	snd_printk(KERN_DEBUG "free_urbs entered.\n");
 	if (!urbs)
 		return;
 
@@ -799,6 +826,7 @@ int snd_usb_caiaq_audio_init(struct snd_usb_caiaqdev *cdev)
 	int i, ret;
 	struct device *dev = caiaqdev_to_dev(cdev);
 
+	snd_printk(KERN_DEBUG "snd_usb_caiaq_audio_init entered.\n");
 	cdev->n_audio_in  = max(cdev->spec.num_analog_audio_in,
 			       cdev->spec.num_digital_audio_in) /
 				CHANNELS_PER_STREAM;
@@ -897,6 +925,7 @@ void snd_usb_caiaq_audio_free(struct snd_usb_caiaqdev *cdev)
 {
 	struct device *dev = caiaqdev_to_dev(cdev);
 
+	snd_printk(KERN_DEBUG "snd_usb_caiaq_audio_free entered.\n");
 	dev_dbg(dev, "%s(%p)\n", __func__, cdev);
 	stream_stop(cdev);
 	free_urbs(cdev->data_urbs_in);

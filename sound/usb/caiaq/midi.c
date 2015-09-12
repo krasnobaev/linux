@@ -28,11 +28,13 @@
 
 static int snd_usb_caiaq_midi_input_open(struct snd_rawmidi_substream *substream)
 {
+	snd_printk(KERN_DEBUG "snd_usb_caiaq_midi_input_open entered.\n");
 	return 0;
 }
 
 static int snd_usb_caiaq_midi_input_close(struct snd_rawmidi_substream *substream)
 {
+	snd_printk(KERN_DEBUG "snd_usb_caiaq_midi_input_close entered.\n");
 	return 0;
 }
 
@@ -40,6 +42,7 @@ static void snd_usb_caiaq_midi_input_trigger(struct snd_rawmidi_substream *subst
 {
 	struct snd_usb_caiaqdev *cdev = substream->rmidi->private_data;
 
+	snd_printk(KERN_DEBUG "snd_usb_caiaq_midi_input_trigger entered.\n");
 	if (!cdev)
 		return;
 
@@ -49,12 +52,15 @@ static void snd_usb_caiaq_midi_input_trigger(struct snd_rawmidi_substream *subst
 
 static int snd_usb_caiaq_midi_output_open(struct snd_rawmidi_substream *substream)
 {
+	snd_printk(KERN_DEBUG "snd_usb_caiaq_midi_output_open entered.\n");
 	return 0;
 }
 
 static int snd_usb_caiaq_midi_output_close(struct snd_rawmidi_substream *substream)
 {
 	struct snd_usb_caiaqdev *cdev = substream->rmidi->private_data;
+
+	snd_printk(KERN_DEBUG "snd_usb_caiaq_midi_output_close entered.\n");
 	if (cdev->midi_out_active) {
 		usb_kill_urb(&cdev->midi_out_urb);
 		cdev->midi_out_active = 0;
@@ -68,6 +74,7 @@ static void snd_usb_caiaq_midi_send(struct snd_usb_caiaqdev *cdev,
 	int len, ret;
 	struct device *dev = caiaqdev_to_dev(cdev);
 
+	snd_printk(KERN_DEBUG "snd_usb_caiaq_midi_send entered.\n");
 	cdev->midi_out_buf[0] = EP1_CMD_MIDI_WRITE;
 	cdev->midi_out_buf[1] = 0; /* port */
 	len = snd_rawmidi_transmit(substream, cdev->midi_out_buf + 3,
@@ -92,6 +99,7 @@ static void snd_usb_caiaq_midi_output_trigger(struct snd_rawmidi_substream *subs
 {
 	struct snd_usb_caiaqdev *cdev = substream->rmidi->private_data;
 
+	snd_printk(KERN_DEBUG "snd_usb_caiaq_midi_output_trigger entered.\n");
 	if (up) {
 		cdev->midi_out_substream = substream;
 		if (!cdev->midi_out_active)
@@ -119,6 +127,7 @@ static struct snd_rawmidi_ops snd_usb_caiaq_midi_input =
 void snd_usb_caiaq_midi_handle_input(struct snd_usb_caiaqdev *cdev,
 				     int port, const char *buf, int len)
 {
+	snd_printk(KERN_DEBUG "snd_usb_caiaq_midi_handle_input entered.\n");
 	if (!cdev->midi_receive_substream)
 		return;
 
@@ -130,6 +139,7 @@ int snd_usb_caiaq_midi_init(struct snd_usb_caiaqdev *device)
 	int ret;
 	struct snd_rawmidi *rmidi;
 
+	snd_printk(KERN_DEBUG "snd_usb_caiaq_midi_init entered.\n");
 	ret = snd_rawmidi_new(device->chip.card, device->product_name, 0,
 					device->spec.num_midi_out,
 					device->spec.num_midi_in,
@@ -164,6 +174,7 @@ void snd_usb_caiaq_midi_output_done(struct urb* urb)
 {
 	struct snd_usb_caiaqdev *cdev = urb->context;
 
+	snd_printk(KERN_DEBUG "snd_usb_caiaq_midi_output_done entered.\n");
 	cdev->midi_out_active = 0;
 	if (urb->status != 0)
 		return;

@@ -42,6 +42,7 @@ static int control_info(struct snd_kcontrol *kcontrol,
 	uinfo->count = 1;
 	pos &= ~CNT_INTVAL;
 
+	snd_printk(KERN_DEBUG "control_info entered.\n");
 	switch (cdev->chip.usb_id) {
 	case USB_ID(USB_VID_NATIVEINSTRUMENTS, USB_PID_AUDIO8DJ):
 	case USB_ID(USB_VID_NATIVEINSTRUMENTS, USB_PID_AUDIO4DJ):
@@ -83,6 +84,7 @@ static int control_get(struct snd_kcontrol *kcontrol,
 	struct snd_usb_caiaqdev *cdev = caiaqdev(chip->card);
 	int pos = kcontrol->private_value;
 
+	snd_printk(KERN_DEBUG "control_get entered.\n");
 	if (pos & CNT_INTVAL)
 		ucontrol->value.integer.value[0]
 			= cdev->control_state[pos & ~CNT_INTVAL];
@@ -102,6 +104,7 @@ static int control_put(struct snd_kcontrol *kcontrol,
 	int v = ucontrol->value.integer.value[0];
 	unsigned char cmd;
 
+	snd_printk(KERN_DEBUG "control_put entered.\n");
 	switch (cdev->chip.usb_id) {
 	case USB_ID(USB_VID_NATIVEINSTRUMENTS, USB_PID_MASCHINECONTROLLER):
 	case USB_ID(USB_VID_NATIVEINSTRUMENTS, USB_PID_TRAKTORKONTROLX1):
@@ -587,6 +590,7 @@ static int add_controls(struct caiaq_controller *c, int num,
 	int i, ret;
 	struct snd_kcontrol *kc;
 
+	snd_printk(KERN_DEBUG "add_controls entered.\n");
 	for (i = 0; i < num; i++, c++) {
 		kcontrol_template.name = c->name;
 		kcontrol_template.private_value = c->index;
@@ -603,6 +607,7 @@ int snd_usb_caiaq_control_init(struct snd_usb_caiaqdev *cdev)
 {
 	int ret = 0;
 
+	snd_printk(KERN_DEBUG "snd_usb_caiaq_control_init entered.\n");
 	switch (cdev->chip.usb_id) {
 	case USB_ID(USB_VID_NATIVEINSTRUMENTS, USB_PID_AK1):
 		ret = add_controls(ak1_controller,

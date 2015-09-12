@@ -149,6 +149,7 @@ static unsigned int decode_erp(unsigned char a, unsigned char b)
 	int range = HIGH_PEAK - LOW_PEAK;
 	int mid_value = (HIGH_PEAK + LOW_PEAK) / 2;
 
+	snd_printk(KERN_DEBUG "decode_erp entered.\n");
 	weight_b = abs(mid_value - a) - (range / 2 - 100) / 2;
 
 	if (weight_b < 0)
@@ -204,6 +205,7 @@ static inline void snd_caiaq_input_report_abs(struct snd_usb_caiaqdev *cdev,
 					      int axis, const unsigned char *buf,
 					      int offset)
 {
+	snd_printk(KERN_DEBUG "snd_caiaq_input_report_abs entered.\n");
 	input_report_abs(cdev->input_dev, axis,
 			 (buf[offset * 2] << 8) | buf[offset * 2 + 1]);
 }
@@ -214,6 +216,7 @@ static void snd_caiaq_input_read_analog(struct snd_usb_caiaqdev *cdev,
 {
 	struct input_dev *input_dev = cdev->input_dev;
 
+	snd_printk(KERN_DEBUG "snd_caiaq_input_read_analog entered.\n");
 	switch (cdev->chip.usb_id) {
 	case USB_ID(USB_VID_NATIVEINSTRUMENTS, USB_PID_RIGKONTROL2):
 		snd_caiaq_input_report_abs(cdev, ABS_X, buf, 2);
@@ -248,6 +251,7 @@ static void snd_caiaq_input_read_erp(struct snd_usb_caiaqdev *cdev,
 	struct input_dev *input_dev = cdev->input_dev;
 	int i;
 
+	snd_printk(KERN_DEBUG "snd_caiaq_input_read_erp entered.\n");
 	switch (cdev->chip.usb_id) {
 	case USB_ID(USB_VID_NATIVEINSTRUMENTS, USB_PID_AK1):
 		i = decode_erp(buf[0], buf[1]);
@@ -307,6 +311,7 @@ static void snd_caiaq_input_read_io(struct snd_usb_caiaqdev *cdev,
 	unsigned short *keycode = input_dev->keycode;
 	int i;
 
+	snd_printk(KERN_DEBUG "snd_caiaq_input_read_io entered.\n");
 	if (!keycode)
 		return;
 
@@ -343,6 +348,7 @@ static void snd_usb_caiaq_tks4_dispatch(struct snd_usb_caiaqdev *cdev,
 {
 	struct device *dev = caiaqdev_to_dev(cdev);
 
+	snd_printk(KERN_DEBUG "snd_usb_caiaq_tks4_dispatch entered.\n");
 	while (len) {
 		unsigned int i, block_id = (buf[0] << 8) | buf[1];
 
@@ -490,6 +496,7 @@ static void snd_usb_caiaq_maschine_dispatch(struct snd_usb_caiaqdev *cdev,
 	unsigned int i, pad_id;
 	__le16 *pressure = (__le16 *) buf;
 
+	snd_printk(KERN_DEBUG "snd_usb_caiaq_maschine_dispatch entered.\n");
 	for (i = 0; i < MASCHINE_PADS; i++) {
 		pad_id = le16_to_cpu(*pressure) >> 12;
 		input_report_abs(cdev->input_dev, MASCHINE_PAD(pad_id),
@@ -507,6 +514,7 @@ static void snd_usb_caiaq_ep4_reply_dispatch(struct urb *urb)
 	struct device *dev = &urb->dev->dev;
 	int ret;
 
+	snd_printk(KERN_DEBUG "snd_usb_caiaq_ep4_reply_dispatch entered.\n");
 	if (urb->status || !cdev || urb != cdev->ep4_in_urb)
 		return;
 
@@ -546,6 +554,7 @@ static int snd_usb_caiaq_input_open(struct input_dev *idev)
 {
 	struct snd_usb_caiaqdev *cdev = input_get_drvdata(idev);
 
+	snd_printk(KERN_DEBUG "snd_usb_caiaq_input_open entered.\n");
 	if (!cdev)
 		return -EINVAL;
 
@@ -565,6 +574,7 @@ static void snd_usb_caiaq_input_close(struct input_dev *idev)
 {
 	struct snd_usb_caiaqdev *cdev = input_get_drvdata(idev);
 
+	snd_printk(KERN_DEBUG "snd_usb_caiaq_input_close entered.\n");
 	if (!cdev)
 		return;
 
@@ -581,6 +591,7 @@ void snd_usb_caiaq_input_dispatch(struct snd_usb_caiaqdev *cdev,
 				  char *buf,
 				  unsigned int len)
 {
+	snd_printk(KERN_DEBUG "snd_usb_caiaq_input_dispatch entered.\n");
 	if (!cdev->input_dev || len < 1)
 		return;
 
@@ -603,6 +614,7 @@ int snd_usb_caiaq_input_init(struct snd_usb_caiaqdev *cdev)
 	struct input_dev *input;
 	int i, ret = 0;
 
+	snd_printk(KERN_DEBUG "snd_usb_caiaq_input_init entered.\n");
 	input = input_allocate_device();
 	if (!input)
 		return -ENOMEM;
@@ -834,6 +846,7 @@ exit_free_idev:
 
 void snd_usb_caiaq_input_free(struct snd_usb_caiaqdev *cdev)
 {
+	snd_printk(KERN_DEBUG "snd_usb_caiaq_input_free entered.\n");
 	if (!cdev || !cdev->input_dev)
 		return;
 

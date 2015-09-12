@@ -162,6 +162,7 @@ static void usb_ep1_command_reply_dispatch (struct urb* urb)
 	struct snd_usb_caiaqdev *cdev = urb->context;
 	unsigned char *buf = urb->transfer_buffer;
 
+	snd_printk(KERN_DEBUG "usb_ep1_command_reply_dispatch entered.\n");
 	if (urb->status || !cdev) {
 		dev_warn(dev, "received EP1 urb->status = %i\n", urb->status);
 		return;
@@ -221,6 +222,7 @@ int snd_usb_caiaq_send_command(struct snd_usb_caiaqdev *cdev,
 	int actual_len;
 	struct usb_device *usb_dev = cdev->chip.dev;
 
+	snd_printk(KERN_DEBUG "snd_usb_caiaq_send_command entered.\n");
 	if (!usb_dev)
 		return -EIO;
 
@@ -244,6 +246,7 @@ int snd_usb_caiaq_send_command_bank(struct snd_usb_caiaqdev *cdev,
 	int actual_len;
 	struct usb_device *usb_dev = cdev->chip.dev;
 
+	snd_printk(KERN_DEBUG "snd_usb_caiaq_send_command_bank entered.\n");
 	if (!usb_dev)
 		return -EIO;
 
@@ -267,6 +270,7 @@ int snd_usb_caiaq_set_audio_params (struct snd_usb_caiaqdev *cdev,
 	char tmp[5];
 	struct device *dev = caiaqdev_to_dev(cdev);
 
+	snd_printk(KERN_DEBUG "snd_usb_caiaq_set_audio_params entered.\n");
 	switch (rate) {
 	case 44100:	tmp[0] = SAMPLERATE_44100;   break;
 	case 48000:	tmp[0] = SAMPLERATE_48000;   break;
@@ -312,6 +316,8 @@ int snd_usb_caiaq_set_auto_msg(struct snd_usb_caiaqdev *cdev,
 			       int digital, int analog, int erp)
 {
 	char tmp[3] = { digital, analog, erp };
+
+	snd_printk(KERN_DEBUG "snd_usb_caiaq_set_auto_msg entered.\n");
 	return snd_usb_caiaq_send_command(cdev, EP1_CMD_AUTO_MSG,
 					  tmp, sizeof(tmp));
 }
@@ -322,6 +328,7 @@ static void setup_card(struct snd_usb_caiaqdev *cdev)
 	char val[4];
 	struct device *dev = caiaqdev_to_dev(cdev);
 
+	snd_printk(KERN_DEBUG "setup_card entered.\n");
 	/* device-specific startup specials */
 	switch (cdev->chip.usb_id) {
 	case USB_ID(USB_VID_NATIVEINSTRUMENTS, USB_PID_RIGKONTROL2):
@@ -411,6 +418,7 @@ static int create_card(struct usb_device *usb_dev,
 	struct snd_card *card;
 	struct snd_usb_caiaqdev *cdev;
 
+	snd_printk(KERN_DEBUG "create_card entered.\n");
 	for (devnum = 0; devnum < SNDRV_CARDS; devnum++)
 		if (enable[devnum])
 			break;
@@ -443,6 +451,7 @@ static int init_card(struct snd_usb_caiaqdev *cdev)
 	struct device *dev = caiaqdev_to_dev(cdev);
 	int err, len;
 
+	snd_printk(KERN_DEBUG "init_card entered.\n");
 	if (usb_set_interface(usb_dev, 0, 1) != 0) {
 		dev_err(dev, "can't set alt interface.\n");
 		return -EIO;
@@ -516,6 +525,7 @@ static int snd_probe(struct usb_interface *intf,
 	struct snd_card *card = NULL;
 	struct usb_device *usb_dev = interface_to_usbdev(intf);
 
+	snd_printk(KERN_DEBUG "snd_probe entered.\n");
 	ret = create_card(usb_dev, intf, &card);
 
 	if (ret < 0)
@@ -538,6 +548,7 @@ static void snd_disconnect(struct usb_interface *intf)
 	struct device *dev = intf->usb_dev;
 	struct snd_usb_caiaqdev *cdev;
 
+	snd_printk(KERN_DEBUG "snd_disconnect entered.\n");
 	if (!card)
 		return;
 
