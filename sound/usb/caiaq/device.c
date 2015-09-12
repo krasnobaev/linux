@@ -525,14 +525,16 @@ static int snd_probe(struct usb_interface *intf,
 	struct snd_card *card = NULL;
 	struct usb_device *usb_dev = interface_to_usbdev(intf);
 
-	snd_printk(KERN_DEBUG "snd_probe entered.\n");
+	snd_printk(KERN_DEBUG "%s entered.\n", __func__);
 	ret = create_card(usb_dev, intf, &card);
+	snd_printk(KERN_DEBUG "%s returned with (ret=%d).\n", __func__, ret);
 
 	if (ret < 0)
 		return ret;
 
 	usb_set_intfdata(intf, card);
 	ret = init_card(caiaqdev(card));
+	snd_printk(KERN_DEBUG "%s returned with (ret=%d).\n", __func__, ret);
 	if (ret < 0) {
 		dev_err(&usb_dev->dev, "unable to init card! (ret=%d)\n", ret);
 		snd_card_free(card);
@@ -548,7 +550,7 @@ static void snd_disconnect(struct usb_interface *intf)
 	struct device *dev = intf->usb_dev;
 	struct snd_usb_caiaqdev *cdev;
 
-	snd_printk(KERN_DEBUG "snd_disconnect entered.\n");
+	snd_printk(KERN_DEBUG "%s entered.\n", __func__);
 	if (!card)
 		return;
 
