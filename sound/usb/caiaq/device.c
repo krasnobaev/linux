@@ -453,8 +453,9 @@ static int init_card(struct snd_usb_caiaqdev *cdev)
 	int err, len;
 
 	snd_printk(KERN_DEBUG "%s entered.\n", __func__);
-	if (usb_set_interface(usb_dev, 0, 1) != 0) {
-		dev_err(dev, "can't set alt interface.\n");
+	err = usb_set_interface(usb_dev, 0, 1);
+	if (err != 0) {
+		dev_err(dev, "can't set alt interface (ret=%d).\n", err);
 		return -EIO;
 	}
 
@@ -474,15 +475,23 @@ static int init_card(struct snd_usb_caiaqdev *cdev)
 	init_waitqueue_head(&cdev->ep1_wait_queue);
 	init_waitqueue_head(&cdev->prepare_wait_queue);
 
-	if (usb_submit_urb(&cdev->ep1_in_urb, GFP_KERNEL) != 0)
+	err = usb_submit_urb(&cdev->ep1_in_urb, GFP_KERNEL);
+	if (err != 0) {
+		dev_err(dev, "unable to issue an asynchronous transfer request for an endpoint: (ret=%d).\n", err);
 		return -EIO;
+	}
 
 	err = snd_usb_caiaq_send_command(cdev, EP1_CMD_GET_DEVICE_INFO, NULL, 0);
-	if (err)
+	if (err) {
+		dev_err(dev, "snd_usb_caiaq_send_command: (ret=%d).\n", err);
 		return err;
+	}
 
-	if (!wait_event_timeout(cdev->ep1_wait_queue, cdev->spec_received, HZ))
+	err = wait_event_timeout(cdev->ep1_wait_queue, cdev->spec_received, HZ);
+	if (!err) {
+		dev_err(dev, "wait_event_timeout - condition evaluated to false: (ret=%d).\n", err);
 		return -ENODEV;
+	}
 
 	usb_string(usb_dev, usb_dev->descriptor.iManufacturer,
 		   cdev->vendor_name, CAIAQ_USB_STR_LEN);
@@ -528,12 +537,14 @@ static int snd_probe(struct usb_interface *intf,
 
 	snd_printk(KERN_DEBUG "%s entered.\n", __func__);
 	ret = create_card(usb_dev, intf, &card);
+	snd_printk(KERN_DEBUG "create_card returned with (ret=%d).\n", ret);
 
 	if (ret < 0)
 		return ret;
 
 	usb_set_intfdata(intf, card);
 	ret = init_card(caiaqdev(card));
+	snd_printk(KERN_DEBUG "init_card returned with (ret=%d).\n", ret);
 	if (ret < 0) {
 		dev_err(&usb_dev->dev, "unable to init card! (ret=%d)\n", ret);
 		snd_card_free(card);
