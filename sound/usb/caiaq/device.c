@@ -480,11 +480,11 @@ static int init_card(struct snd_usb_caiaqdev *cdev)
 	init_waitqueue_head(&cdev->ep1_wait_queue);
 	init_waitqueue_head(&cdev->prepare_wait_queue);
 
-	err = usb_submit_urb(&cdev->ep1_in_urb, GFP_KERNEL);
-	if (err != 0) {
-		dev_err(dev, "unable to issue an asynchronous transfer request for an endpoint: (ret=%d).\n", err);
-		return -EIO;
-	}
+	// err = usb_submit_urb(&cdev->ep1_in_urb, GFP_KERNEL);
+	// if (err != 0) {
+	// 	dev_err(dev, "unable to issue an asynchronous transfer request for an endpoint: (ret=%d).\n", err);
+	// 	return -EIO;
+	// }
 
 	err = snd_usb_caiaq_send_command(cdev, EP1_CMD_GET_DEVICE_INFO, NULL, 0);
 	if (err) {
