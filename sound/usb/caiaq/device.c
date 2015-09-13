@@ -486,17 +486,17 @@ static int init_card(struct snd_usb_caiaqdev *cdev)
 	// 	return -EIO;
 	// }
 
-	err = snd_usb_caiaq_send_command(cdev, EP1_CMD_GET_DEVICE_INFO, NULL, 0);
-	if (err) {
-		dev_err(dev, "snd_usb_caiaq_send_command: (ret=%d).\n", err);
-		return err;
-	}
+	// err = snd_usb_caiaq_send_command(cdev, EP1_CMD_GET_DEVICE_INFO, NULL, 0);
+	// if (err) {
+	// 	dev_err(dev, "snd_usb_caiaq_send_command: (ret=%d).\n", err);
+	// 	return err;
+	// }
 
-	err = wait_event_timeout(cdev->ep1_wait_queue, cdev->spec_received, HZ);
-	if (!err) {
-		dev_err(dev, "wait_event_timeout - condition evaluated to false: (ret=%d).\n", err);
-		return -ENODEV;
-	}
+	// err = wait_event_timeout(cdev->ep1_wait_queue, cdev->spec_received, HZ);
+	// if (!err) {
+	// 	dev_err(dev, "wait_event_timeout - condition evaluated to false: (ret=%d).\n", err);
+	// 	return -ENODEV;
+	// }
 
 	usb_string(usb_dev, usb_dev->descriptor.iManufacturer,
 		   cdev->vendor_name, CAIAQ_USB_STR_LEN);
