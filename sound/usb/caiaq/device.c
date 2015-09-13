@@ -153,6 +153,11 @@ static struct usb_device_id snd_usb_id_table[] = {
 		.idVendor =     USB_VID_NATIVEINSTRUMENTS,
 		.idProduct =    USB_PID_MASCHINECONTROLLER
 	},
+	{
+		.match_flags =  USB_DEVICE_ID_MATCH_DEVICE,
+		.idVendor =     USB_VID_NATIVEINSTRUMENTS,
+		.idProduct =    USB_PID_MASCHINEMIKRO
+	},
 	{ /* terminator */ }
 };
 
@@ -234,7 +239,7 @@ int snd_usb_caiaq_send_command(struct snd_usb_caiaqdev *cdev,
 		memcpy(cdev->ep1_out_buf+1, buffer, len);
 
 	cdev->ep1_out_buf[0] = command;
-	return usb_bulk_msg(usb_dev, usb_sndbulkpipe(usb_dev, 1),
+	return usb_bulk_msg(usb_dev, usb_sndbulkpipe(usb_dev, 0),
 			   cdev->ep1_out_buf, len+1, &actual_len, 200);
 }
 
@@ -453,7 +458,7 @@ static int init_card(struct snd_usb_caiaqdev *cdev)
 	int err, len;
 
 	snd_printk(KERN_DEBUG "%s entered.\n", __func__);
-	err = usb_set_interface(usb_dev, 0, 1);
+	err = usb_set_interface(usb_dev, 0, 0);
 	if (err != 0) {
 		dev_err(dev, "can't set alt interface (ret=%d).\n", err);
 		return -EIO;
@@ -463,12 +468,12 @@ static int init_card(struct snd_usb_caiaqdev *cdev)
 	usb_init_urb(&cdev->midi_out_urb);
 
 	usb_fill_bulk_urb(&cdev->ep1_in_urb, usb_dev,
-			  usb_rcvbulkpipe(usb_dev, 0x1),
+			  usb_rcvbulkpipe(usb_dev, 0x0),
 			  cdev->ep1_in_buf, EP1_BUFSIZE,
 			  usb_ep1_command_reply_dispatch, cdev);
 
 	usb_fill_bulk_urb(&cdev->midi_out_urb, usb_dev,
-			  usb_sndbulkpipe(usb_dev, 0x1),
+			  usb_sndbulkpipe(usb_dev, 0x0),
 			  cdev->midi_out_buf, EP1_BUFSIZE,
 			  snd_usb_caiaq_midi_output_done, cdev);
 
