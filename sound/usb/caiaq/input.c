@@ -292,6 +292,7 @@ static void snd_caiaq_input_read_erp(struct snd_usb_caiaqdev *cdev,
 		input_report_abs(input_dev, ABS_HAT3X, decode_erp(buf[7],  buf[6]));
 		input_report_abs(input_dev, ABS_HAT3Y, decode_erp(buf[1],  buf[0]));
 
+	case USB_ID(USB_VID_NATIVEINSTRUMENTS, USB_PID_MASCHINEMIKRO):
 		/* volume */
 		input_report_abs(input_dev, ABS_RX, decode_erp(buf[17], buf[16]));
 		/* tempo */
@@ -536,6 +537,7 @@ static void snd_usb_caiaq_ep4_reply_dispatch(struct urb *urb)
 		break;
 
 	case USB_ID(USB_VID_NATIVEINSTRUMENTS, USB_PID_MASCHINECONTROLLER):
+	case USB_ID(USB_VID_NATIVEINSTRUMENTS, USB_PID_MASCHINEMIKRO):
 		if (urb->actual_length < (MASCHINE_PADS * MASCHINE_MSGBLOCK_SIZE))
 			goto requeue;
 
@@ -562,6 +564,7 @@ static int snd_usb_caiaq_input_open(struct input_dev *idev)
 	case USB_ID(USB_VID_NATIVEINSTRUMENTS, USB_PID_TRAKTORKONTROLX1):
 	case USB_ID(USB_VID_NATIVEINSTRUMENTS, USB_PID_TRAKTORKONTROLS4):
 	case USB_ID(USB_VID_NATIVEINSTRUMENTS, USB_PID_MASCHINECONTROLLER):
+	case USB_ID(USB_VID_NATIVEINSTRUMENTS, USB_PID_MASCHINEMIKRO):
 		if (usb_submit_urb(cdev->ep4_in_urb, GFP_KERNEL) != 0)
 			return -EIO;
 		break;
@@ -582,6 +585,7 @@ static void snd_usb_caiaq_input_close(struct input_dev *idev)
 	case USB_ID(USB_VID_NATIVEINSTRUMENTS, USB_PID_TRAKTORKONTROLX1):
 	case USB_ID(USB_VID_NATIVEINSTRUMENTS, USB_PID_TRAKTORKONTROLS4):
 	case USB_ID(USB_VID_NATIVEINSTRUMENTS, USB_PID_MASCHINECONTROLLER):
+	case USB_ID(USB_VID_NATIVEINSTRUMENTS, USB_PID_MASCHINEMIKRO):
 		usb_kill_urb(cdev->ep4_in_urb);
 		break;
 	}
@@ -775,6 +779,7 @@ int snd_usb_caiaq_input_init(struct snd_usb_caiaqdev *cdev)
 		break;
 
 	case USB_ID(USB_VID_NATIVEINSTRUMENTS, USB_PID_MASCHINECONTROLLER):
+	case USB_ID(USB_VID_NATIVEINSTRUMENTS, USB_PID_MASCHINEMIKRO):
 		input->evbit[0] = BIT_MASK(EV_KEY) | BIT_MASK(EV_ABS);
 		input->absbit[0] = BIT_MASK(ABS_HAT0X) | BIT_MASK(ABS_HAT0Y) |
 			BIT_MASK(ABS_HAT1X) | BIT_MASK(ABS_HAT1Y) |
