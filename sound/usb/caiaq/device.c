@@ -454,15 +454,16 @@ static int init_card(struct snd_usb_caiaqdev *cdev)
 	char *c, usbpath[32];
 	struct usb_device *usb_dev = cdev->chip.dev;
 	struct snd_card *card = cdev->chip.card;
-	struct device *dev = caiaqdev_to_dev(cdev);
-	int err, len;
+	// struct device *dev = caiaqdev_to_dev(cdev);
+	// int err;
+	int len;
 
 	snd_printk(KERN_DEBUG "%s entered.\n", __func__);
-	err = usb_set_interface(usb_dev, 0, 0);
-	if (err != 0) {
-		dev_err(dev, "can't set alt interface (ret=%d).\n", err);
-		return -EIO;
-	}
+	// err = usb_set_interface(usb_dev, 0, 0);
+	// if (err != 0) {
+	// 	dev_err(dev, "can't set alt interface (ret=%d).\n", err);
+	// 	return -EIO;
+	// }
 
 	usb_init_urb(&cdev->ep1_in_urb);
 	usb_init_urb(&cdev->midi_out_urb);
