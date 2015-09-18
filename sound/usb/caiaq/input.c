@@ -549,12 +549,13 @@ requeue:
 	cdev->ep4_in_urb->actual_length = 0;
 	ret = usb_submit_urb(cdev->ep4_in_urb, GFP_ATOMIC);
 	if (ret < 0)
-		dev_err(dev, "unable to submit urb. OOM!?\n");
+		dev_err(dev, "unable to issue an asynchronous transfer request for an endpoint: (ret=%d).\n", ret);
 }
 
 static int snd_usb_caiaq_input_open(struct input_dev *idev)
 {
 	struct snd_usb_caiaqdev *cdev = input_get_drvdata(idev);
+	int err;
 
 	snd_printk(KERN_DEBUG "%s entered.\n", __func__);
 	if (!cdev)
@@ -565,8 +566,11 @@ static int snd_usb_caiaq_input_open(struct input_dev *idev)
 	case USB_ID(USB_VID_NATIVEINSTRUMENTS, USB_PID_TRAKTORKONTROLS4):
 	case USB_ID(USB_VID_NATIVEINSTRUMENTS, USB_PID_MASCHINECONTROLLER):
 	case USB_ID(USB_VID_NATIVEINSTRUMENTS, USB_PID_MASCHINEMIKRO):
-		if (usb_submit_urb(cdev->ep4_in_urb, GFP_KERNEL) != 0)
+		err = usb_submit_urb(cdev->ep4_in_urb, GFP_KERNEL);
+		if (err != 0) {
+			dev_err(caiaqdev_to_dev(cdev), "unable to issue an asynchronous transfer request for an endpoint: (ret=%d).\n", err);
 			return -EIO;
+		}
 		break;
 	}
 

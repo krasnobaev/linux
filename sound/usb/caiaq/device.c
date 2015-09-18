@@ -217,7 +217,7 @@ static void usb_ep1_command_reply_dispatch (struct urb* urb)
 	cdev->ep1_in_urb.actual_length = 0;
 	ret = usb_submit_urb(&cdev->ep1_in_urb, GFP_ATOMIC);
 	if (ret < 0)
-		dev_err(dev, "unable to submit urb. OOM!?\n");
+		dev_err(dev, "unable to issue an asynchronous transfer request for an endpoint: (ret=%d).\n", ret);
 }
 
 int snd_usb_caiaq_send_command(struct snd_usb_caiaqdev *cdev,
