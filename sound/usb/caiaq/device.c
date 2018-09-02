@@ -26,6 +26,7 @@
 #include <linux/init.h>
 #include <linux/gfp.h>
 #include <linux/usb.h>
+#include <linux/hid.h>
 #include <sound/initval.h>
 #include <sound/core.h>
 #include <sound/pcm.h>
@@ -468,16 +469,33 @@ static int init_card(struct snd_usb_caiaqdev *cdev)
 	usb_init_urb(&cdev->ep1_in_urb);
 	usb_init_urb(&cdev->midi_out_urb);
 
-	usb_fill_bulk_urb(&cdev->ep1_in_urb, usb_dev,
-			  usb_rcvbulkpipe(usb_dev, 0x1),
-			  cdev->ep1_in_buf, EP1_BUFSIZE,
-			  usb_ep1_command_reply_dispatch, cdev);
+	// start send reports
 
-	usb_fill_bulk_urb(&cdev->midi_out_urb, usb_dev,
-			  usb_sndbulkpipe(usb_dev, 0x1),
-			  cdev->midi_out_buf, EP1_BUFSIZE,
-			  snd_usb_caiaq_midi_output_done, cdev);
+	/* allocate control URB */
+	dev->cntl_urb = usb_alloc_urb(0, GFP_KERNEL);
+	if (!dev->cntl_urb)
+		goto error;
 
+	/* allocate buffer for control req */
+	dev->cntl_req = kmalloc(YUREX_BUF_SIZE, GFP_KERNEL);
+	if (!dev->cntl_req)
+		goto error;
+
+	/* configure control URB */
+	dev->ep1_in_urb->bRequestType = USB_DIR_OUT | USB_TYPE_CLASS |
+				      USB_RECIP_INTERFACE;
+	dev->ep1_in_urb->bRequest	= HID_REQ_SET_REPORT;
+	dev->ep1_in_urb->wValue	= cpu_to_le16((HID_OUTPUT_REPORT + 1) << 8);
+	dev->ep1_in_urb->wIndex	= cpu_to_le16(iface_desc->desc.bInterfaceNumber);
+	dev->ep1_in_urb->wLength	= cpu_to_le16(EP1_BUFSIZE);
+
+	usb_fill_control_urb(dev->ep1_in_urb, usb_dev,
+			     usb_sndctrlpipe(usb_dev, 0),
+			     (void *)dev->ep1_in_urb, dev->cntl_buffer,
+			     EP1_BUFSIZE, yurex_control_callback, dev);
+	// dev->ep1_in_urb->transfer_flags |= URB_NO_TRANSFER_DMA_MAP;
+
+	// end
 
 	// usb_fill_bulk_urb(&cdev->ep1_in_urb, usb_dev,
 	// 		  usb_rcvbulkpipe(usb_dev, 0x4),
@@ -627,3 +645,17 @@ static struct usb_driver snd_usb_driver = {
 };
 
 module_usb_driver(snd_usb_driver);
+
+static void yurex_control_callback(struct urb *urb)
+{
+	struct usb_yurex *dev = urb->context;
+	int status = urb->status;
+
+	if (status) {
+		dev_err(&urb->dev->dev, "%s - control failed: %d\n",
+			__func__, status);
+		wake_up_interruptible(&dev->waitq);
+		return;
+	}
+	/* on success, sender woken up by CMD_ACK int in, or timeout */
+}
