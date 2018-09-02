@@ -52,7 +52,8 @@ MODULE_SUPPORTED_DEVICE("{{Native Instruments,RigKontrol2},"
 			 "{Native Instruments,GuitarRig mobile},"
 			 "{Native Instruments,Traktor Kontrol X1},"
 			 "{Native Instruments,Traktor Kontrol S4},"
-			 "{Native Instruments,Maschine Controller}}");
+			 "{Native Instruments,Maschine Controller},"
+			 "{Native Instruments,Maschine Mikro}}");
 
 static int index[SNDRV_CARDS] = SNDRV_DEFAULT_IDX; /* Index 0-max */
 static char* id[SNDRV_CARDS] = SNDRV_DEFAULT_STR; /* Id for this card */
@@ -152,6 +153,11 @@ static const struct usb_device_id snd_usb_id_table[] = {
 		.idVendor =     USB_VID_NATIVEINSTRUMENTS,
 		.idProduct =    USB_PID_MASCHINECONTROLLER
 	},
+	{
+		.match_flags =  USB_DEVICE_ID_MATCH_DEVICE,
+		.idVendor =     USB_VID_NATIVEINSTRUMENTS,
+		.idProduct =    USB_PID_MASCHINEMIKRO
+	},
 	{ /* terminator */ }
 };
 
@@ -162,6 +168,7 @@ static void usb_ep1_command_reply_dispatch (struct urb* urb)
 	struct snd_usb_caiaqdev *cdev = urb->context;
 	unsigned char *buf = urb->transfer_buffer;
 
+	snd_printk(KERN_DEBUG "%s entered.\n", __func__);
 	if (urb->status || !cdev) {
 		dev_warn(dev, "received EP1 urb->status = %i\n", urb->status);
 		return;
@@ -210,7 +217,7 @@ static void usb_ep1_command_reply_dispatch (struct urb* urb)
 	cdev->ep1_in_urb.actual_length = 0;
 	ret = usb_submit_urb(&cdev->ep1_in_urb, GFP_ATOMIC);
 	if (ret < 0)
-		dev_err(dev, "unable to submit urb. OOM!?\n");
+		dev_err(dev, "unable to issue an asynchronous transfer request for an endpoint: (ret=%d).\n", ret);
 }
 
 int snd_usb_caiaq_send_command(struct snd_usb_caiaqdev *cdev,
@@ -221,6 +228,7 @@ int snd_usb_caiaq_send_command(struct snd_usb_caiaqdev *cdev,
 	int actual_len;
 	struct usb_device *usb_dev = cdev->chip.dev;
 
+	snd_printk(KERN_DEBUG "%s entered.\n", __func__);
 	if (!usb_dev)
 		return -EIO;
 
@@ -231,7 +239,7 @@ int snd_usb_caiaq_send_command(struct snd_usb_caiaqdev *cdev,
 		memcpy(cdev->ep1_out_buf+1, buffer, len);
 
 	cdev->ep1_out_buf[0] = command;
-	return usb_bulk_msg(usb_dev, usb_sndbulkpipe(usb_dev, 1),
+	return usb_bulk_msg(usb_dev, usb_sndbulkpipe(usb_dev, 0),
 			   cdev->ep1_out_buf, len+1, &actual_len, 200);
 }
 
@@ -244,6 +252,7 @@ int snd_usb_caiaq_send_command_bank(struct snd_usb_caiaqdev *cdev,
 	int actual_len;
 	struct usb_device *usb_dev = cdev->chip.dev;
 
+	snd_printk(KERN_DEBUG "%s entered.\n", __func__);
 	if (!usb_dev)
 		return -EIO;
 
@@ -267,6 +276,7 @@ int snd_usb_caiaq_set_audio_params (struct snd_usb_caiaqdev *cdev,
 	char tmp[5];
 	struct device *dev = caiaqdev_to_dev(cdev);
 
+	snd_printk(KERN_DEBUG "%s entered.\n", __func__);
 	switch (rate) {
 	case 44100:	tmp[0] = SAMPLERATE_44100;   break;
 	case 48000:	tmp[0] = SAMPLERATE_48000;   break;
@@ -312,6 +322,8 @@ int snd_usb_caiaq_set_auto_msg(struct snd_usb_caiaqdev *cdev,
 			       int digital, int analog, int erp)
 {
 	char tmp[3] = { digital, analog, erp };
+
+	snd_printk(KERN_DEBUG "%s entered.\n", __func__);
 	return snd_usb_caiaq_send_command(cdev, EP1_CMD_AUTO_MSG,
 					  tmp, sizeof(tmp));
 }
@@ -322,6 +334,7 @@ static void setup_card(struct snd_usb_caiaqdev *cdev)
 	char val[4];
 	struct device *dev = caiaqdev_to_dev(cdev);
 
+	snd_printk(KERN_DEBUG "%s entered.\n", __func__);
 	/* device-specific startup specials */
 	switch (cdev->chip.usb_id) {
 	case USB_ID(USB_VID_NATIVEINSTRUMENTS, USB_PID_RIGKONTROL2):
@@ -411,6 +424,7 @@ static int create_card(struct usb_device *usb_dev,
 	struct snd_card *card;
 	struct snd_usb_caiaqdev *cdev;
 
+	snd_printk(KERN_DEBUG "%s entered.\n", __func__);
 	for (devnum = 0; devnum < SNDRV_CARDS; devnum++)
 		if (enable[devnum])
 			break;
@@ -441,12 +455,15 @@ static int init_card(struct snd_usb_caiaqdev *cdev)
 	struct usb_device *usb_dev = cdev->chip.dev;
 	struct snd_card *card = cdev->chip.card;
 	struct device *dev = caiaqdev_to_dev(cdev);
-	int err, len;
+	int err;
+	int len;
 
-	if (usb_set_interface(usb_dev, 0, 1) != 0) {
-		dev_err(dev, "can't set alt interface.\n");
-		return -EIO;
-	}
+	snd_printk(KERN_DEBUG "%s entered.\n", __func__);
+	// err = usb_set_interface(usb_dev, 0, 0);
+	// if (err != 0) {
+	// 	dev_err(dev, "can't set alt interface (ret=%d).\n", err);
+	// 	return -EIO;
+	// }
 
 	usb_init_urb(&cdev->ep1_in_urb);
 	usb_init_urb(&cdev->midi_out_urb);
@@ -461,27 +478,48 @@ static int init_card(struct snd_usb_caiaqdev *cdev)
 			  cdev->midi_out_buf, EP1_BUFSIZE,
 			  snd_usb_caiaq_midi_output_done, cdev);
 
-	/* sanity checks of EPs before actually submitting */
-	if (usb_urb_ep_type_check(&cdev->ep1_in_urb) ||
-	    usb_urb_ep_type_check(&cdev->midi_out_urb)) {
-		dev_err(dev, "invalid EPs\n");
-		return -EINVAL;
-	}
 
-	init_waitqueue_head(&cdev->ep1_wait_queue);
-	init_waitqueue_head(&cdev->prepare_wait_queue);
+	// usb_fill_bulk_urb(&cdev->ep1_in_urb, usb_dev,
+	// 		  usb_rcvbulkpipe(usb_dev, 0x4),
+	// 		  cdev->ep1_in_buf, EP1_BUFSIZE,
+	// 		  usb_ep1_command_reply_dispatch, cdev);
 
-	if (usb_submit_urb(&cdev->ep1_in_urb, GFP_KERNEL) != 0)
-		return -EIO;
+	// usb_fill_bulk_urb(&cdev->midi_out_urb, usb_dev,
+	// 		  usb_sndbulkpipe(usb_dev, 0x4),
+	// 		  cdev->midi_out_buf, EP1_BUFSIZE,
+	// 		  snd_usb_caiaq_midi_output_done, cdev);
 
-	err = snd_usb_caiaq_send_command(cdev, EP1_CMD_GET_DEVICE_INFO, NULL, 0);
-	if (err)
-		goto err_kill_urb;
+	// dev_err(dev, "%i ep1\n", usb_urb_ep_type_check(&cdev->ep1_in_urb));
+	// dev_err(dev, "%i midi\n", usb_urb_ep_type_check(&cdev->midi_out_urb));
 
-	if (!wait_event_timeout(cdev->ep1_wait_queue, cdev->spec_received, HZ)) {
-		err = -ENODEV;
-		goto err_kill_urb;
-	}
+	// /* sanity checks of EPs before actually submitting */
+	// if (usb_urb_ep_type_check(&cdev->ep1_in_urb) ||
+	//     usb_urb_ep_type_check(&cdev->midi_out_urb)) {
+	// 	dev_err(dev, "invalid EPs\n");
+	// 	return -EINVAL;
+	// }
+
+	// init_waitqueue_head(&cdev->ep1_wait_queue);
+	// init_waitqueue_head(&cdev->prepare_wait_queue);
+
+	// err = usb_submit_urb(&cdev->ep1_in_urb, GFP_KERNEL);
+	// if (err != 0) {
+	// 	dev_err(dev, "unable to issue an asynchronous transfer request for an endpoint: (ret=%d).\n", err);
+	// 	return -EIO;
+	// }
+
+	// err = snd_usb_caiaq_send_command(cdev, EP1_CMD_GET_DEVICE_INFO, NULL, 0);
+	// if (err) {
+	//  	dev_err(dev, "snd_usb_caiaq_send_command: (ret=%d).\n", err);
+	//     goto err_kill_urb;
+	// }
+
+	// err = wait_event_timeout(cdev->ep1_wait_queue, cdev->spec_received, HZ);
+	// if (!err) {
+	//  	dev_err(dev, "wait_event_timeout - condition evaluated to false: (ret=%d).\n", err);
+	//     err = -ENODEV;
+	//     goto err_kill_urb;
+	// }
 
 	usb_string(usb_dev, usb_dev->descriptor.iManufacturer,
 		   cdev->vendor_name, CAIAQ_USB_STR_LEN);
@@ -509,15 +547,19 @@ static int init_card(struct snd_usb_caiaqdev *cdev)
 
 		snd_card_set_id(card, id);
 	}
+	snd_printk(KERN_DEBUG "card id (%s).\n", card->id);
 
 	usb_make_path(usb_dev, usbpath, sizeof(usbpath));
 	snprintf(card->longname, sizeof(card->longname), "%s %s (%s)",
 		       cdev->vendor_name, cdev->product_name, usbpath);
 
+	snd_printk(KERN_DEBUG "card path (%s %s %s).\n",
+		       cdev->vendor_name, cdev->product_name, usbpath);
+
 	setup_card(cdev);
 	return 0;
 
- err_kill_urb:
+err_kill_urb:
 	usb_kill_urb(&cdev->ep1_in_urb);
 	return err;
 }
@@ -529,13 +571,16 @@ static int snd_probe(struct usb_interface *intf,
 	struct snd_card *card = NULL;
 	struct usb_device *usb_dev = interface_to_usbdev(intf);
 
+	snd_printk(KERN_DEBUG "%s entered.\n", __func__);
 	ret = create_card(usb_dev, intf, &card);
+	snd_printk(KERN_DEBUG "create_card returned with (ret=%d).\n", ret);
 
 	if (ret < 0)
 		return ret;
 
 	usb_set_intfdata(intf, card);
 	ret = init_card(caiaqdev(card));
+	snd_printk(KERN_DEBUG "init_card returned with (ret=%d).\n", ret);
 	if (ret < 0) {
 		dev_err(&usb_dev->dev, "unable to init card! (ret=%d)\n", ret);
 		snd_card_free(card);
@@ -551,6 +596,7 @@ static void snd_disconnect(struct usb_interface *intf)
 	struct device *dev = intf->usb_dev;
 	struct snd_usb_caiaqdev *cdev;
 
+	snd_printk(KERN_DEBUG "%s entered.\n", __func__);
 	if (!card)
 		return;
 

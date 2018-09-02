@@ -149,6 +149,7 @@ static unsigned int decode_erp(unsigned char a, unsigned char b)
 	int range = HIGH_PEAK - LOW_PEAK;
 	int mid_value = (HIGH_PEAK + LOW_PEAK) / 2;
 
+	snd_printk(KERN_DEBUG "%s entered.\n", __func__);
 	weight_b = abs(mid_value - a) - (range / 2 - 100) / 2;
 
 	if (weight_b < 0)
@@ -204,6 +205,7 @@ static inline void snd_caiaq_input_report_abs(struct snd_usb_caiaqdev *cdev,
 					      int axis, const unsigned char *buf,
 					      int offset)
 {
+	snd_printk(KERN_DEBUG "%s entered.\n", __func__);
 	input_report_abs(cdev->input_dev, axis,
 			 (buf[offset * 2] << 8) | buf[offset * 2 + 1]);
 }
@@ -214,6 +216,7 @@ static void snd_caiaq_input_read_analog(struct snd_usb_caiaqdev *cdev,
 {
 	struct input_dev *input_dev = cdev->input_dev;
 
+	snd_printk(KERN_DEBUG "%s entered.\n", __func__);
 	switch (cdev->chip.usb_id) {
 	case USB_ID(USB_VID_NATIVEINSTRUMENTS, USB_PID_RIGKONTROL2):
 		snd_caiaq_input_report_abs(cdev, ABS_X, buf, 2);
@@ -248,6 +251,7 @@ static void snd_caiaq_input_read_erp(struct snd_usb_caiaqdev *cdev,
 	struct input_dev *input_dev = cdev->input_dev;
 	int i;
 
+	snd_printk(KERN_DEBUG "%s entered.\n", __func__);
 	switch (cdev->chip.usb_id) {
 	case USB_ID(USB_VID_NATIVEINSTRUMENTS, USB_PID_AK1):
 		i = decode_erp(buf[0], buf[1]);
@@ -288,6 +292,7 @@ static void snd_caiaq_input_read_erp(struct snd_usb_caiaqdev *cdev,
 		input_report_abs(input_dev, ABS_HAT3X, decode_erp(buf[7],  buf[6]));
 		input_report_abs(input_dev, ABS_HAT3Y, decode_erp(buf[1],  buf[0]));
 
+	case USB_ID(USB_VID_NATIVEINSTRUMENTS, USB_PID_MASCHINEMIKRO):
 		/* volume */
 		input_report_abs(input_dev, ABS_RX, decode_erp(buf[17], buf[16]));
 		/* tempo */
@@ -307,6 +312,7 @@ static void snd_caiaq_input_read_io(struct snd_usb_caiaqdev *cdev,
 	unsigned short *keycode = input_dev->keycode;
 	int i;
 
+	snd_printk(KERN_DEBUG "%s entered.\n", __func__);
 	if (!keycode)
 		return;
 
@@ -343,6 +349,7 @@ static void snd_usb_caiaq_tks4_dispatch(struct snd_usb_caiaqdev *cdev,
 {
 	struct device *dev = caiaqdev_to_dev(cdev);
 
+	snd_printk(KERN_DEBUG "%s entered.\n", __func__);
 	while (len) {
 		unsigned int i, block_id = (buf[0] << 8) | buf[1];
 
@@ -490,6 +497,7 @@ static void snd_usb_caiaq_maschine_dispatch(struct snd_usb_caiaqdev *cdev,
 	unsigned int i, pad_id;
 	__le16 *pressure = (__le16 *) buf;
 
+	snd_printk(KERN_DEBUG "%s entered.\n", __func__);
 	for (i = 0; i < MASCHINE_PADS; i++) {
 		pad_id = le16_to_cpu(*pressure) >> 12;
 		input_report_abs(cdev->input_dev, MASCHINE_PAD(pad_id),
@@ -507,6 +515,7 @@ static void snd_usb_caiaq_ep4_reply_dispatch(struct urb *urb)
 	struct device *dev = &urb->dev->dev;
 	int ret;
 
+	snd_printk(KERN_DEBUG "%s entered.\n", __func__);
 	if (urb->status || !cdev || urb != cdev->ep4_in_urb)
 		return;
 
@@ -528,6 +537,7 @@ static void snd_usb_caiaq_ep4_reply_dispatch(struct urb *urb)
 		break;
 
 	case USB_ID(USB_VID_NATIVEINSTRUMENTS, USB_PID_MASCHINECONTROLLER):
+	case USB_ID(USB_VID_NATIVEINSTRUMENTS, USB_PID_MASCHINEMIKRO):
 		if (urb->actual_length < (MASCHINE_PADS * MASCHINE_MSGBLOCK_SIZE))
 			goto requeue;
 
@@ -539,13 +549,15 @@ requeue:
 	cdev->ep4_in_urb->actual_length = 0;
 	ret = usb_submit_urb(cdev->ep4_in_urb, GFP_ATOMIC);
 	if (ret < 0)
-		dev_err(dev, "unable to submit urb. OOM!?\n");
+		dev_err(dev, "unable to issue an asynchronous transfer request for an endpoint: (ret=%d).\n", ret);
 }
 
 static int snd_usb_caiaq_input_open(struct input_dev *idev)
 {
 	struct snd_usb_caiaqdev *cdev = input_get_drvdata(idev);
+	int err;
 
+	snd_printk(KERN_DEBUG "%s entered.\n", __func__);
 	if (!cdev)
 		return -EINVAL;
 
@@ -553,8 +565,12 @@ static int snd_usb_caiaq_input_open(struct input_dev *idev)
 	case USB_ID(USB_VID_NATIVEINSTRUMENTS, USB_PID_TRAKTORKONTROLX1):
 	case USB_ID(USB_VID_NATIVEINSTRUMENTS, USB_PID_TRAKTORKONTROLS4):
 	case USB_ID(USB_VID_NATIVEINSTRUMENTS, USB_PID_MASCHINECONTROLLER):
-		if (usb_submit_urb(cdev->ep4_in_urb, GFP_KERNEL) != 0)
+	case USB_ID(USB_VID_NATIVEINSTRUMENTS, USB_PID_MASCHINEMIKRO):
+		err = usb_submit_urb(cdev->ep4_in_urb, GFP_KERNEL);
+		if (err != 0) {
+			dev_err(caiaqdev_to_dev(cdev), "unable to issue an asynchronous transfer request for an endpoint: (ret=%d).\n", err);
 			return -EIO;
+		}
 		break;
 	}
 
@@ -565,6 +581,7 @@ static void snd_usb_caiaq_input_close(struct input_dev *idev)
 {
 	struct snd_usb_caiaqdev *cdev = input_get_drvdata(idev);
 
+	snd_printk(KERN_DEBUG "%s entered.\n", __func__);
 	if (!cdev)
 		return;
 
@@ -572,6 +589,7 @@ static void snd_usb_caiaq_input_close(struct input_dev *idev)
 	case USB_ID(USB_VID_NATIVEINSTRUMENTS, USB_PID_TRAKTORKONTROLX1):
 	case USB_ID(USB_VID_NATIVEINSTRUMENTS, USB_PID_TRAKTORKONTROLS4):
 	case USB_ID(USB_VID_NATIVEINSTRUMENTS, USB_PID_MASCHINECONTROLLER):
+	case USB_ID(USB_VID_NATIVEINSTRUMENTS, USB_PID_MASCHINEMIKRO):
 		usb_kill_urb(cdev->ep4_in_urb);
 		break;
 	}
@@ -581,6 +599,7 @@ void snd_usb_caiaq_input_dispatch(struct snd_usb_caiaqdev *cdev,
 				  char *buf,
 				  unsigned int len)
 {
+	snd_printk(KERN_DEBUG "%s entered.\n", __func__);
 	if (!cdev->input_dev || len < 1)
 		return;
 
@@ -603,6 +622,7 @@ int snd_usb_caiaq_input_init(struct snd_usb_caiaqdev *cdev)
 	struct input_dev *input;
 	int i, ret = 0;
 
+	snd_printk(KERN_DEBUG "%s entered.\n", __func__);
 	input = input_allocate_device();
 	if (!input)
 		return -ENOMEM;
@@ -769,6 +789,7 @@ int snd_usb_caiaq_input_init(struct snd_usb_caiaqdev *cdev)
 		break;
 
 	case USB_ID(USB_VID_NATIVEINSTRUMENTS, USB_PID_MASCHINECONTROLLER):
+	case USB_ID(USB_VID_NATIVEINSTRUMENTS, USB_PID_MASCHINEMIKRO):
 		input->evbit[0] = BIT_MASK(EV_KEY) | BIT_MASK(EV_ABS);
 		input->absbit[0] = BIT_MASK(ABS_HAT0X) | BIT_MASK(ABS_HAT0Y) |
 			BIT_MASK(ABS_HAT1X) | BIT_MASK(ABS_HAT1Y) |
@@ -843,6 +864,7 @@ exit_free_idev:
 
 void snd_usb_caiaq_input_free(struct snd_usb_caiaqdev *cdev)
 {
+	snd_printk(KERN_DEBUG "%s entered.\n", __func__);
 	if (!cdev || !cdev->input_dev)
 		return;
 
